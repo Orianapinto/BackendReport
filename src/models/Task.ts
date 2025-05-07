@@ -8,8 +8,8 @@ export interface ITask extends Document {
   taskRef: string;
   status: "Planned" | "In progress" | "Completed";
   completedDate: Date;
-  createdBy: Types.ObjectId;
-  updatedBy: Types.ObjectId;
+  createdBy?: string;
+  updatedBy?: string;
 }
 
 const TaskSchema = new Schema<ITask>(
@@ -37,16 +37,8 @@ const TaskSchema = new Schema<ITask>(
       type: Date,
       required: true,
     },
-    createdBy: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    updatedBy: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
+    createdBy: { type: String   },
+    updatedBy: { type: String   },
   },
   { timestamps: true }
 );

@@ -1,16 +1,22 @@
 import { Router } from "express";
+import asyncHandler from 'express-async-handler';
 import {
   createTask,
   getTasks,
   getTaskById,
+  updateTask,
+  deleteTask
 } from "../controllers/taskController";
-import authMiddleware from "../middleware/auth";
 
 const router = Router();
 
-router.use(authMiddleware);
-router.post("/", createTask);
-router.get("/", getTasks);
-router.get("/:id", getTaskById);
+router.route('/')
+  .get(asyncHandler(getTasks))
+  .post(asyncHandler(createTask));
+
+router.route('/:id')
+  .get(asyncHandler(getTaskById))
+  .put(asyncHandler(updateTask))
+  .delete(asyncHandler(deleteTask));
 
 export default router;
