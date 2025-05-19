@@ -9,11 +9,11 @@ export interface ITask extends Document {
   clientSlug: string;
   location: Types.ObjectId;
   locationSlug: string;
-  assignedTo: Types.ObjectId;
+  assignedTo: string; // Changed to string for Clerk user ID
   dueDate: Date;
   completedDate?: Date;
-  createdBy?: string;
-  updatedBy?: string;
+  createdBy: string; // Clerk user ID
+  updatedBy: string; // Clerk user ID
 }
 
 const TaskSchema = new Schema<ITask>(
@@ -50,7 +50,7 @@ const TaskSchema = new Schema<ITask>(
       required: true,
     },
     assignedTo: {
-      type: Schema.Types.ObjectId,
+      type: String,
       required: true,
     },
     dueDate: {
@@ -60,8 +60,14 @@ const TaskSchema = new Schema<ITask>(
     completedDate: {
       type: Date,
     },
-    createdBy: { type: String },
-    updatedBy: { type: String },
+    createdBy: {
+      type: String,
+      required: true,
+    },
+    updatedBy: {
+      type: String,
+      required: true,
+    },
   },
   { timestamps: true }
 );

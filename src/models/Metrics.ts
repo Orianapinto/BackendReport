@@ -1,32 +1,50 @@
 import { Schema, model, Document, Types } from "mongoose";
 
 export interface IMetrics extends Document {
-  location: "Venezuela" | "Florida" | "Spain" | "Panama" | "Texas";
-  activeUsers: number;
-  conversions: number;
-  createdBy: Types.ObjectId;
-  updatedBy: Types.ObjectId;
+  name: string;
+  description: string;
+  type: "Performance" | "Engagement" | "Conversion";
+  value: number;
+  client: Types.ObjectId;
+  clientSlug: string;
+  location: Types.ObjectId;
+  locationSlug: string;
+  date: Date;
+  source: string;
+  channel: string;
+  metadata: Record<string, any>;
+  createdBy: string;
+  updatedBy: string;
 }
 
 const MetricsSchema = new Schema<IMetrics>(
   {
-    location: {
+    name: { type: String, required: true },
+    description: { type: String, required: true },
+    type: {
       type: String,
       required: true,
-      enum: ["Venezuela", "Florida", "Spain", "Panama", "Texas"],
+      enum: ["Performance", "Engagement", "Conversion"],
     },
-    activeUsers: { type: Number, required: true },
-    conversions: { type: Number, required: true },
-    createdBy: {
+    value: { type: Number, required: true },
+    client: {
       type: Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Client",
       required: true,
     },
-    updatedBy: {
+    clientSlug: { type: String, required: true },
+    location: {
       type: Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Location",
       required: true,
     },
+    locationSlug: { type: String, required: true },
+    date: { type: Date, required: true },
+    source: { type: String, required: true },
+    channel: { type: String, required: true },
+    metadata: { type: Map, of: Schema.Types.Mixed, required: true },
+    createdBy: { type: String, required: true },
+    updatedBy: { type: String, required: true },
   },
   { timestamps: true }
 );
