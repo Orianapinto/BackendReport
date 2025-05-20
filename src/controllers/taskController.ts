@@ -1,105 +1,163 @@
 import { Request, Response } from "express";
 import Task from "../models/Task";
 
-// Cambia el tipo de retorno de Promise<Response | undefined> a Promise<void>
-const createTask = async (req: Request, res: Response): Promise<void> => {
-  try {
-    // Validar campos requeridos
-    const { title, description, location, category, completedDate } = req.body;
-    
-    if (!title || !description || !location || !category || !completedDate) {
-      res.status(400).json({ 
-        message: "Faltan campos requeridos" 
-      });
-      return; // Solo return sin nada
-    }
+/**
+ * Controlador de Tareas
+ * Maneja las operaciones CRUD para las tareas asignadas a diferentes ubicaciones y clientes
+ */
 
+/**
+ * Crear una nueva tarea
+ * @param req.body Datos de la tarea a crear
+ * @param req.body.title Título de la tarea
+ * @param req.body.description Descripción detallada
+ * @param req.body.status Estado inicial (Planned, In progress, Completed)
+ * @param req.body.type Tipo de tarea (Desarrollo, Diseño, Soporte)
+ * @param req.body.client ID del cliente
+ * @param req.body.location ID de la ubicación
+ * @param req.body.assignedTo ID del usuario asignado
+ * @param req.body.userId ID del usuario de Clerk que crea la tarea
+ */
+export const createTask = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
     const newTask = new Task({
       ...req.body,
-      createdBy: req.body.createdBy || "anonymous",
-      updatedBy: req.body.updatedBy || "anonymous",
+      createdBy: req.body.userId, // From Clerk
+      updatedBy: req.body.userId, // From Clerk
     });
-    
+
     const savedTask = await newTask.save();
     res.status(201).json(savedTask);
-    // No hay return
   } catch (error) {
-    console.error("Error creating task:", error);
-    res.status(500).json({ message: "Error creating task", error });
-    // No hay return
+    res.status(500).json({
+      message: "Error creating task",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
   }
 };
 
-// Modifica los demás controladores de manera similar
-const getTasks = async (_req: Request, res: Response): Promise<void> => {
+/**
+ * Obtener todas las tareas
+ * @param req.query.client Filtrar por cliente
+ * @param req.query.location Filtrar por ubicación
+ * @param req.query.status Filtrar por estado
+ * @param req.query.type Filtrar por tipo
+ * @returns Lista de tareas que coinciden con los filtros
+ */
+export const getTasks = async (req: Request, res: Response): Promise<void> => {
   try {
-    const tasks = await Task.find();
+    const { client, location, status, type } = req.query;
+
+    const filter: any = {};
+    if (client) filter.client = client;
+    if (location) filter.location = location;
+    if (status) filter.status = status;
+    if (type) filter.type = type;
+
+    const tasks = await Task.find(filter)
+      .populate("client", "name")
+      .populate("location", "name")
+      .sort({ createdAt: -1 });
+
     res.status(200).json(tasks);
   } catch (error) {
-    console.error("Error fetching tasks:", error);
-    res.status(500).json({ message: "Error fetching tasks", error });
+    res.status(500).json({
+      message: "Error fetching tasks",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
   }
 };
 
-const getTaskById = async (req: Request, res: Response): Promise<void> => {
+/**
+ * Obtener una tarea por su ID
+ * @param req.params.id ID de la tarea a buscar
+ * @returns Tarea encontrada o error 404 si no existe
+ */
+export const getTaskById = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
-    const task = await Task.findById(req.params.id);
-    
+    const task = await Task.findById(req.params.id)
+      .populate("client", "name")
+      .populate("location", "name");
+
     if (!task) {
       res.status(404).json({ message: "Task not found" });
       return;
     }
-    
+
     res.status(200).json(task);
   } catch (error) {
-    console.error("Error fetching task:", error);
-    res.status(500).json({ message: "Error fetching task", error });
+    res.status(500).json({
+      message: "Error fetching task",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
   }
 };
 
-const updateTask = async (req: Request, res: Response): Promise<void> => {
+/**
+ * Actualizar una tarea existente
+ * @param req.params.id ID de la tarea a actualizar
+ * @param req.body Datos a actualizar
+ * @param req.body.userId ID del usuario de Clerk que realiza la actualización
+ * @returns Tarea actualizada
+ */
+export const updateTask = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const updatedTask = await Task.findByIdAndUpdate(
       req.params.id,
-      { 
-        ...req.body, 
-        updatedBy: req.body.updatedBy || "anonymous" 
+      {
+        ...req.body,
+        updatedBy: req.body.userId, // From Clerk
       },
-      { new: true, runValidators: true }
+      { new: true }
     );
-    
+
     if (!updatedTask) {
       res.status(404).json({ message: "Task not found" });
       return;
     }
-    
+
     res.status(200).json(updatedTask);
   } catch (error) {
-    console.error("Error updating task:", error);
-    res.status(500).json({ message: "Error updating task", error });
+    res.status(500).json({
+      message: "Error updating task",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
   }
 };
 
-const deleteTask = async (req: Request, res: Response): Promise<void> => {
+/**
+ * Actualizar una tarea existente
+ * @param req.params.id ID de la tarea a actualizar
+ * @param req.body Datos a actualizar
+ * @param req.body.userId ID del usuario de Clerk que realiza la actualización
+ * @returns Tarea actualizada
+ */
+export const deleteTask = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const deletedTask = await Task.findByIdAndDelete(req.params.id);
-    
+
     if (!deletedTask) {
       res.status(404).json({ message: "Task not found" });
       return;
     }
-    
+
     res.status(200).json({ message: "Task deleted successfully" });
   } catch (error) {
-    console.error("Error deleting task:", error);
-    res.status(500).json({ message: "Error deleting task", error });
+    res.status(500).json({
+      message: "Error deleting task",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
   }
-};
-
-export { 
-    createTask, 
-    getTasks, 
-    getTaskById, 
-    updateTask, 
-    deleteTask 
 };
