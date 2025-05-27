@@ -3,8 +3,9 @@ import { Schema, model, Document, Types } from "mongoose";
 export interface ITask extends Document {
   title: string;
   description: string;
+  notes?: string; // Optional notes/considerations
   status: "Planned" | "In progress" | "Completed";
-  type: "Desarrollo" | "Diseño" | "Soporte";
+  type: "Development" | "Design" | "Support";
   client: Types.ObjectId;
   clientSlug: string;
   location: Types.ObjectId;
@@ -12,20 +13,20 @@ export interface ITask extends Document {
   assignedTo: string; // Changed to string for Clerk user ID
   dueDate: Date;
   completedDate?: Date;
-  actividad: {
-    accion: string;
-    fecha: Date;
-    usuario: string;
+  activity: {
+    action: string;
+    date: Date;
+    user: string;
   }[];
   createdBy: string; // Clerk user ID
   updatedBy: string; // Clerk user ID
-
 }
 
 const TaskSchema = new Schema<ITask>(
   {
     title: { type: String, required: true },
     description: { type: String, required: true },
+    notes: { type: String, required: false },
     status: {
       type: String,
       required: true,
@@ -35,7 +36,7 @@ const TaskSchema = new Schema<ITask>(
     type: {
       type: String,
       required: true,
-      enum: ["Desarrollo", "Diseño", "Soporte"],
+      enum: ["Development", "Design", "Support"],
     },
     client: {
       type: Schema.Types.ObjectId,
@@ -67,11 +68,13 @@ const TaskSchema = new Schema<ITask>(
       type: Date,
     },
     // Para seguimiento de actividad
-    actividad: [{
-        accion: { type: String },
-        fecha: { type: Date, default: Date.now },
-        usuario: { type: String }
-    }],
+    activity: [
+      {
+        action: { type: String },
+        date: { type: Date, default: Date.now },
+        user: { type: String },
+      },
+    ],
     createdBy: {
       type: String,
       required: true,
