@@ -133,13 +133,13 @@ export const updateTask = async (
       };
       
       // Concatenamos el array existente con la nueva actividad
-      updateData.actividad = [...currentTask.actividad, nuevaActividad];
+      updateData.actividad = [...currentTask.activity, nuevaActividad];
       
       // Eliminamos el campo nuevaActividad para que no se guarde en la BD
       delete updateData.nuevaActividad;
     } else {
       // Si no se envía una nueva actividad, mantenemos el array existente
-      updateData.actividad = currentTask.actividad;
+      updateData.actividad = currentTask.activity;
     }
 
     // Si el estado cambia a "Completed" y no hay fecha de completado, la agregamos
