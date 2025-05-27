@@ -100,19 +100,43 @@ export const updateImprovement = async (
   res: Response
 ): Promise<void> => {
   try {
-    const updatedImprovement = await Improvement.findByIdAndUpdate(
-      req.params.id,
-      {
-        ...req.body,
-        updatedBy: req.body.userId,
-      },
-      { new: true }
-    );
+    // Primero obtenemos la mejora actual para acceder al array de actividades existente
+    const currentImprovement = await Improvement.findById(req.params.id);
 
-    if (!updatedImprovement) {
+    if (!currentImprovement) {
       res.status(404).json({ message: "Improvement not found" });
       return;
     }
+
+    // Preparamos los datos para la actualización
+    const updateData = { ...req.body, updatedBy: req.body.userId };
+    
+    // Si se está enviando una nueva actividad
+    if (req.body.nuevaActividad) {
+      // Creamos el objeto de nueva actividad
+      const nuevaActividad = {
+        accion: req.body.nuevaActividad,
+        fecha: new Date(),
+        usuario: req.body.userId
+      };
+      
+      // Concatenamos el array existente con la nueva actividad
+      updateData.actividad = [...currentImprovement.actividad, nuevaActividad];
+
+       // Eliminamos el campo nuevaActividad para que no se guarde en la BD
+      delete updateData.nuevaActividad;
+    } else {
+      // Si no se envía una nueva actividad, mantenemos el array existente
+      // para evitar sobreescribirlo con un valor undefined
+      updateData.actividad = currentImprovement.actividad;
+    }
+
+    // Actualizamos la mejora con los nuevos datos
+    const updatedImprovement = await Improvement.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
 
     res.status(200).json(updatedImprovement);
   } catch (error) {

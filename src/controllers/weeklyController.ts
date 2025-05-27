@@ -54,8 +54,10 @@ export const getWeeklyReports = async (
     const reports = await WeeklyReport.find(filter)
       .populate("client", "name")
       .populate("location", "name")
-      .populate("completedTasks")
-      .populate("pendingTasks")
+      .populate({
+        path: "tasks.task",
+        model: "Task",
+      })
       .populate("improvements")
       .populate("metrics")
       .sort({ year: -1, weekNumber: -1 });
@@ -81,8 +83,10 @@ export const getWeeklyReportById = async (
     const report = await WeeklyReport.findById(req.params.id)
       .populate("client", "name")
       .populate("location", "name")
-      .populate("completedTasks")
-      .populate("pendingTasks")
+      .populate({
+        path: "tasks.task",
+        model: "Task",
+      })
       .populate("improvements")
       .populate("metrics");
 
@@ -105,27 +109,80 @@ export const getWeeklyReportById = async (
  * @param req.params.id ID del reporte a actualizar
  * @param req.body Datos a actualizar
  * @param req.body.userId ID del usuario de Clerk que actualiza
+ * @param req.body.nuevaObservacion Texto de la nueva observación a registrar (opcional)
+ * @param req.body.nuevaActividad Texto de la nueva actividad a registrar (opcional)
  */
 export const updateWeeklyReport = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    const updatedReport = await WeeklyReport.findByIdAndUpdate(
-      req.params.id,
-      {
-        ...req.body,
-        updatedBy: req.body.userId,
-      },
-      { new: true }
-    ).populate(
-      "client location completedTasks pendingTasks improvements metrics"
-    );
+    // Primero obtenemos el reporte actual para acceder a los arrays existentes
+    const currentReport = await WeeklyReport.findById(req.params.id);
 
-    if (!updatedReport) {
+    if (!currentReport) {
       res.status(404).json({ message: "Weekly report not found" });
       return;
     }
+
+    // Preparamos los datos para la actualización
+    const updateData = { ...req.body, updatedBy: req.body.userId };
+
+    // Si se está enviando una nueva actividad
+    if (req.body.nuevaActividad) {
+      // Creamos el objeto de nueva actividad
+      const nuevaActividad = {
+        accion: req.body.nuevaActividad,
+        fecha: new Date(),
+        usuario: req.body.userId,
+      };
+
+      // Concatenamos el array existente con la nueva actividad
+      updateData.actividad = [...currentReport.actividad, nuevaActividad];
+
+      // Eliminamos el campo nuevaActividad para que no se guarde en la BD
+      delete updateData.nuevaActividad;
+    } else {
+      // Si no se envía una nueva actividad, mantenemos el array existente
+      updateData.actividad = currentReport.actividad;
+    }
+
+    // Si se está enviando una nueva observación
+    if (req.body.nuevaObservacion) {
+      // Creamos el objeto de nueva observación
+      const nuevaObservacion = {
+        descripcion: req.body.nuevaObservacion,
+        fecha: new Date(),
+        usuario: req.body.userId,
+      };
+
+      // Concatenamos el array existente con la nueva observación
+      updateData.observaciones = [
+        ...currentReport.observaciones,
+        nuevaObservacion,
+      ];
+
+      // Eliminamos el campo nuevaObservacion para que no se guarde en la BD
+      delete updateData.nuevaObservacion;
+    } else {
+      // Si no se envía una nueva observación, mantenemos el array existente
+      updateData.observaciones = currentReport.observaciones;
+    }
+
+    const updatedReport = await WeeklyReport.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    ).populate([
+      "client",
+      "location",
+      {
+        path: "tasks.task",
+        model: "Task",
+      },
+      "improvements",
+      "metrics",
+    ]);
 
     res.status(200).json(updatedReport);
   } catch (error) {
@@ -172,8 +229,10 @@ export const consolidateWeeklyReport = async (
 ): Promise<void> => {
   try {
     const report = await WeeklyReport.findById(req.params.id)
-      .populate("completedTasks")
-      .populate("pendingTasks")
+      .populate({
+        path: "tasks.task",
+        model: "Task",
+      })
       .populate("improvements");
 
     if (!report) {
@@ -181,12 +240,25 @@ export const consolidateWeeklyReport = async (
       return;
     }
 
+    // Calcular métricas
+    const completedTasks = report.tasks.filter(
+      (t) => t.status === "Completed"
+    ).length;
+
     report.isConsolidated = true;
     report.calculatedMetrics = {
-      totalTasks: report.completedTasks.length + report.pendingTasks.length,
-      completedTasks: report.completedTasks.length,
+      totalTasks: report.tasks.length,
+      completedTasks: completedTasks,
       improvements: report.improvements.length,
     };
+
+    // Registrar actividad de consolidación
+    report.actividad.push({
+      accion: "Reporte consolidado",
+      fecha: new Date(),
+      usuario: req.body.userId,
+    });
+
     report.updatedBy = req.body.userId;
 
     await report.save();

@@ -1,21 +1,28 @@
-import { Router } from "express";
-import asyncHandler from "express-async-handler";
-import {
-  createTask,
-  getTasks,
-  getTaskById,
-  updateTask,
-  deleteTask,
+import express from "express";
+import { 
+    createTask, 
+    getTasks, 
+    getTaskById, 
+    updateTask, 
+    deleteTask 
 } from "../controllers/taskController";
 
-const router = Router();
+const taskRouter = express.Router();
 
-router.route("/").get(asyncHandler(getTasks)).post(asyncHandler(createTask));
+// Rutas para tareas
+// GET /api/tasks - Obtener todas las tareas (con filtros opcionales)
+taskRouter.get("/", getTasks);
 
-router
-  .route("/:id")
-  .get(asyncHandler(getTaskById))
-  .put(asyncHandler(updateTask))
-  .delete(asyncHandler(deleteTask));
+// GET /api/tasks/:id - Obtener una tarea específica por ID
+taskRouter.get("/:id", getTaskById);
 
-export default router;
+// POST /api/tasks - Crear una nueva tarea
+taskRouter.post("/", createTask);
+
+// PUT /api/tasks/:id - Actualizar una tarea existente
+taskRouter.put("/:id", updateTask);
+
+// DELETE /api/tasks/:id - Eliminar una tarea
+taskRouter.delete("/:id", deleteTask);
+
+export default taskRouter;

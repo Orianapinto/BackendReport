@@ -11,9 +11,11 @@ export interface IWeeklyReport extends Document {
   clientSlug: string;
   location: Types.ObjectId;
   locationSlug: string;
-  isConsolidated: boolean;
-  completedTasks: Types.ObjectId[];
-  pendingTasks: Types.ObjectId[];
+  isConsolidated: boolean; // Indica si el reporte ya fue finalizado/consolidado
+  tasks: {
+    task: Types.ObjectId;
+    status: "Planned" | "In progress" | "Completed";
+  }[]; // Lista unificada de tareas con su estado
   improvements: Types.ObjectId[];
   metrics: Types.ObjectId[];
   calculatedMetrics: {
@@ -21,7 +23,16 @@ export interface IWeeklyReport extends Document {
     completedTasks: number;
     improvements: number;
   };
-  notes: string;
+  observaciones: { // Array de observaciones en lugar de una sola nota
+    descripcion: string;
+    fecha: Date;
+    usuario: string;
+  }[];
+  actividad: { // Para seguimiento de cambios
+    accion: string;
+    fecha: Date;
+    usuario: string;
+  }[];
   createdBy: string; // Clerk user ID
   updatedBy: string; // Clerk user ID
 }
@@ -52,9 +63,15 @@ const WeeklyReportSchema = new Schema<IWeeklyReport>(
       type: String,
       required: true,
     },
-    isConsolidated: { type: Boolean, default: false },
-    completedTasks: [{ type: Schema.Types.ObjectId, ref: "Task" }],
-    pendingTasks: [{ type: Schema.Types.ObjectId, ref: "Task" }],
+    isConsolidated: { type: Boolean, default: false }, // Indica si el reporte está finalizado
+    // Lista unificada de tareas con su estado actual
+    tasks: [{
+      task: { type: Schema.Types.ObjectId, ref: "Task" },
+      status: { 
+        type: String,
+        enum: ["Planned", "In progress", "Completed"],
+      }
+    }],
     improvements: [{ type: Schema.Types.ObjectId, ref: "Improvement" }],
     metrics: [{ type: Schema.Types.ObjectId, ref: "Metrics" }],
     calculatedMetrics: {
@@ -62,7 +79,18 @@ const WeeklyReportSchema = new Schema<IWeeklyReport>(
       completedTasks: { type: Number, default: 0 },
       improvements: { type: Number, default: 0 },
     },
-    notes: { type: String },
+    // Array de observaciones en lugar de una sola nota
+    observaciones: [{
+      descripcion: { type: String, required: true },
+      fecha: { type: Date, default: Date.now },
+      usuario: { type: String, required: true }
+    }],
+    // Para seguimiento de actividad/cambios
+    actividad: [{
+      accion: { type: String },
+      fecha: { type: Date, default: Date.now },
+      usuario: { type: String }
+    }],
     createdBy: {
       type: String,
       required: true,

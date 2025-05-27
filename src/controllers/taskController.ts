@@ -104,6 +104,7 @@ export const getTaskById = async (
  * @param req.params.id ID de la tarea a actualizar
  * @param req.body Datos a actualizar
  * @param req.body.userId ID del usuario de Clerk que realiza la actualización
+ * @param req.body.nuevaActividad Texto de la nueva actividad a registrar (opcional)
  * @returns Tarea actualizada
  */
 export const updateTask = async (
@@ -111,19 +112,46 @@ export const updateTask = async (
   res: Response
 ): Promise<void> => {
   try {
-    const updatedTask = await Task.findByIdAndUpdate(
-      req.params.id,
-      {
-        ...req.body,
-        updatedBy: req.body.userId, // From Clerk
-      },
-      { new: true }
-    );
+    // Primero obtenemos la tarea actual para acceder al array de actividades existente
+    const currentTask = await Task.findById(req.params.id);
 
-    if (!updatedTask) {
+    if (!currentTask) {
       res.status(404).json({ message: "Task not found" });
       return;
     }
+
+    // Preparamos los datos para la actualización
+    const updateData = { ...req.body, updatedBy: req.body.userId };
+    
+    // Si se está enviando una nueva actividad
+    if (req.body.nuevaActividad) {
+      // Creamos el objeto de nueva actividad
+      const nuevaActividad = {
+        accion: req.body.nuevaActividad,
+        fecha: new Date(),
+        usuario: req.body.userId
+      };
+      
+      // Concatenamos el array existente con la nueva actividad
+      updateData.actividad = [...currentTask.actividad, nuevaActividad];
+      
+      // Eliminamos el campo nuevaActividad para que no se guarde en la BD
+      delete updateData.nuevaActividad;
+    } else {
+      // Si no se envía una nueva actividad, mantenemos el array existente
+      updateData.actividad = currentTask.actividad;
+    }
+
+    // Si el estado cambia a "Completed" y no hay fecha de completado, la agregamos
+    if (updateData.status === "Completed" && !updateData.completedDate && currentTask.status !== "Completed") {
+      updateData.completedDate = new Date();
+    }
+
+    const updatedTask = await Task.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
 
     res.status(200).json(updatedTask);
   } catch (error) {

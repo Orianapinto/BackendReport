@@ -11,6 +11,11 @@ export interface IImprovement extends Document {
   locationSlug: string;
   implementedBy: string; // Clerk user ID
   implementationDate: Date;
+  actividad: {
+    accion: string;
+    fecha: Date;
+    usuario: string;
+  }[];
   createdBy: string; // Clerk user ID
   updatedBy: string; // Clerk user ID
 }
@@ -56,13 +61,18 @@ const ImprovementSchema = new Schema<IImprovement>(
       type: Date,
       required: true,
     },
+    // Para seguimiento de actividad
+    actividad: [{
+        accion: { type: String },
+        fecha: { type: Date, default: Date.now },
+        usuario: { type: String }
+    }],
     createdBy: {
       type: String,
       required: true,
     },
     updatedBy: {
       type: String,
-      required: true,
     },
   },
   { timestamps: true }

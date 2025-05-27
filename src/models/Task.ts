@@ -12,8 +12,14 @@ export interface ITask extends Document {
   assignedTo: string; // Changed to string for Clerk user ID
   dueDate: Date;
   completedDate?: Date;
+  actividad: {
+    accion: string;
+    fecha: Date;
+    usuario: string;
+  }[];
   createdBy: string; // Clerk user ID
   updatedBy: string; // Clerk user ID
+
 }
 
 const TaskSchema = new Schema<ITask>(
@@ -60,13 +66,18 @@ const TaskSchema = new Schema<ITask>(
     completedDate: {
       type: Date,
     },
+    // Para seguimiento de actividad
+    actividad: [{
+        accion: { type: String },
+        fecha: { type: Date, default: Date.now },
+        usuario: { type: String }
+    }],
     createdBy: {
       type: String,
       required: true,
     },
     updatedBy: {
       type: String,
-      required: true,
     },
   },
   { timestamps: true }
