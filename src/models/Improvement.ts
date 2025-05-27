@@ -3,6 +3,7 @@ import { Schema, model, Document, Types } from "mongoose";
 export interface IImprovement extends Document {
   title: string;
   description: string;
+  status: "Planned" | "In progress" | "Completed";
   type: "Process" | "Technical" | "Other";
   client: Types.ObjectId;
   clientSlug: string;
@@ -18,6 +19,12 @@ const ImprovementSchema = new Schema<IImprovement>(
   {
     title: { type: String, required: true },
     description: { type: String, required: true },
+    status: {
+      type: String,
+      required: true,
+      enum: ["Planned", "In progress", "Completed"],
+      default: "Planned",
+    },
     type: {
       type: String,
       required: true,
