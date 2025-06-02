@@ -122,28 +122,32 @@ export const updateTask = async (
 
     // Preparamos los datos para la actualización
     const updateData = { ...req.body, updatedBy: req.body.userId };
-    
+
     // Si se está enviando una nueva actividad
     if (req.body.nuevaActividad) {
       // Creamos el objeto de nueva actividad
       const nuevaActividad = {
         accion: req.body.nuevaActividad,
         fecha: new Date(),
-        usuario: req.body.userId
+        usuario: req.body.userId,
       };
-      
+
       // Concatenamos el array existente con la nueva actividad
-      updateData.actividad = [...currentTask.actividad, nuevaActividad];
-      
+      updateData.actividad = [...currentTask.activity, nuevaActividad];
+
       // Eliminamos el campo nuevaActividad para que no se guarde en la BD
       delete updateData.nuevaActividad;
     } else {
       // Si no se envía una nueva actividad, mantenemos el array existente
-      updateData.actividad = currentTask.actividad;
+      updateData.actividad = currentTask.activity;
     }
 
     // Si el estado cambia a "Completed" y no hay fecha de completado, la agregamos
-    if (updateData.status === "Completed" && !updateData.completedDate && currentTask.status !== "Completed") {
+    if (
+      updateData.status === "Completed" &&
+      !updateData.completedDate &&
+      currentTask.status !== "Completed"
+    ) {
       updateData.completedDate = new Date();
     }
 
