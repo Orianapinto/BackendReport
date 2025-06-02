@@ -133,7 +133,7 @@ export const updateTask = async (
       };
 
       // Concatenamos el array existente con la nueva actividad
-      updateData.actividad = [...currentTask.activity, nuevaActividad];
+      updateData.actividad = [...currentTask.actividad, nuevaActividad];
 
       // Eliminamos el campo nuevaActividad para que no se guarde en la BD
       delete updateData.nuevaActividad;
